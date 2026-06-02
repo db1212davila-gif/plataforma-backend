@@ -60,34 +60,24 @@ function App() {
     setLoading(false);
   }, []);
 
-  const handleLogin = (email, password) => {
-    // Login simulado para pruebas
-    const fakeUser = { name: "Usuario Demo", email, plan: "free" };
-    const fakeWorkspace = { id: "ws_123", name: "Mi Empresa Demo" };
-    
-    localStorage.setItem('token', 'fake-token-123');
-    localStorage.setItem('user', JSON.stringify(fakeUser));
-    localStorage.setItem('workspace', JSON.stringify(fakeWorkspace));
-    
-    setUser(fakeUser);
-    setWorkspace(fakeWorkspace);
-    setIsLoggedIn(true);
-    
-    const total = mockContacts.length;
-    const open = mockContacts.filter(c => c.status === "open").length;
-    const pending = mockContacts.filter(c => c.status === "pending").length;
-    const resolved = mockContacts.filter(c => c.status === "resolved").length;
+  const loadConversations = async (workspaceId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/api/conversations/${workspaceId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    setConversations(data);
+    // Calcular stats
+    const total = data.length;
+    const open = data.filter(c => c.status === "open").length;
+    const pending = data.filter(c => c.status === "pending").length;
+    const resolved = data.filter(c => c.status === "resolved").length;
     setStats({ total, open, pending, resolved });
-    setConversations(mockContacts);
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    setUser(null);
-    setWorkspace(null);
-    setIsLoggedIn(false);
-    setSelectedConversation(null);
-  };
+  } catch (error) {
+    console.error('Error cargando conversaciones:', error);
+  }
+};
 
   const selectConversation = (conversation) => {
     setSelectedConversation(conversation);
