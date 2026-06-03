@@ -138,9 +138,39 @@ function App() {
     setMessages(conversationMessages);
   };
 
-  const sendMessage = () => {
+  // FUNCIÓN ACTUALIZADA PARA ENVIAR EMAILS REALES
+  const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
     
+    // Si es email, enviar realmente
+    if (selectedConversation.channel === 'email') {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/api/email/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            to: selectedConversation.channelId,
+            subject: `Mensaje de OmniConnect CRM`,
+            message: newMessage
+          })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          alert('✅ Email enviado correctamente');
+        } else {
+          alert('❌ Error al enviar email: ' + data.error);
+        }
+      } catch (error) {
+        alert('Error de conexión con el servidor');
+      }
+    }
+    
+    // Mostrar mensaje en la conversación
     const newMsg = {
       id: Date.now(),
       from: "agent",
