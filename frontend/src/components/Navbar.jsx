@@ -15,14 +15,16 @@ const Navbar = ({ user, workspace, activeTab, setActiveTab, onLogout }) => {
     { id: 'audit_logs', label: '📝 Logs', icon: '📜' },
   ];
   
-  // Menú para CLIENTE (empresa)
+  // Menú para CLIENTE (empresa) - ACTUALIZADO CON PIPELINE Y SCORING
   const clientMenu = [
     { id: 'conversations', label: '💬 Conversaciones', icon: '💬' },
+    { id: 'pipeline', label: '📊 Pipeline', icon: '📊' },
+    { id: 'scoring', label: '🎯 Scoring', icon: '🎯' },
     { id: 'contacts', label: '📒 Contactos', icon: '👥' },
     { id: 'agents', label: '👥 Agentes', icon: '🧑‍💼' },
-    { id: 'reports', label: '📊 Reportes', icon: '📈' },
+    { id: 'reports', label: '📈 Reportes', icon: '📊' },
     { id: 'settings', label: '⚙️ Configuración', icon: '🔧' },
-    { id: 'billing', label: '💳 Facturación', icon: '💰' },
+    { id: 'billing', label: '💰 Facturación', icon: '💰' },
   ];
   
   const menu = isSuperAdmin ? superAdminMenu : clientMenu;
@@ -38,7 +40,8 @@ const Navbar = ({ user, workspace, activeTab, setActiveTab, onLogout }) => {
       height: '60px',
       position: 'sticky',
       top: 0,
-      zIndex: 1000
+      zIndex: 1000,
+      flexWrap: 'wrap'
     }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
