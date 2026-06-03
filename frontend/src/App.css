@@ -36,3 +36,56 @@
     transform: rotate(360deg);
   }
 }
+
+/* Responsive para celulares */
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+    height: auto !important;
+    padding: 10px !important;
+  }
+  
+  nav div:first-child {
+    margin-bottom: 10px;
+  }
+  
+  nav div:last-child {
+    margin-top: 10px;
+  }
+  
+  .sidebar-left {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+  
+  .sidebar-left.open {
+    left: 0;
+  }
+  
+  .sidebar-right {
+    display: none;
+  }
+  
+  .chat-panel {
+    width: 100%;
+  }
+  
+  /* Botón menú hamburguesa */
+  .menu-toggle {
+    display: block;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1001;
+    background: #1f6feb;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+}

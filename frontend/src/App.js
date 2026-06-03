@@ -3,6 +3,10 @@ import Navbar from './components/Navbar';
 import AdminDashboard from './pages/AdminDashboard';
 import PipelineKanban from './components/PipelineKanban';
 import LeadScoring from './components/LeadScoring';
+import AgentsPanel from './pages/AgentsPanel';
+import ReportsPanel from './pages/ReportsPanel';
+import SettingsPanel from './pages/SettingsPanel';
+import BillingPanel from './pages/BillingPanel';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
@@ -20,17 +24,16 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('conversations');
 
-  // CONTACTOS REALES - OmniConnect CRM
   const realContacts = [
-    { id: 1, name: "Cristofer Davila", channel: "whatsapp", status: "open", lastMessage: "Cliente - Esperando respuesta", time: new Date().toLocaleTimeString(), unread: 0, avatar: "CD", channelId: "0963176949", phoneNumber: "0963176949" },
-    { id: 2, name: "Bryan Davila", channel: "whatsapp", status: "open", lastMessage: "Administrador - Cliente potencial", time: new Date().toLocaleTimeString(), unread: 0, avatar: "BD", channelId: "0963117997", phoneNumber: "0963117997" },
-    { id: 3, name: "Recor Digital", channel: "telegram", status: "pending", lastMessage: "Canal de Telegram - Recor Digital", time: new Date().toLocaleTimeString(), unread: 0, avatar: "RD", channelId: "@RecorDigital", username: "@RecorDigital" },
+    { id: 1, name: "Cristofer Davila", channel: "whatsapp", status: "open", lastMessage: "Cliente - Esperando respuesta", time: new Date().toLocaleTimeString(), unread: 0, avatar: "CD", channelId: "0963176949" },
+    { id: 2, name: "Bryan Davila", channel: "whatsapp", status: "open", lastMessage: "Administrador - Cliente potencial", time: new Date().toLocaleTimeString(), unread: 0, avatar: "BD", channelId: "0963117997" },
+    { id: 3, name: "Recor Digital", channel: "telegram", status: "pending", lastMessage: "Canal de Telegram", time: new Date().toLocaleTimeString(), unread: 0, avatar: "RD", channelId: "@RecorDigital" },
     { id: 4, name: "Contacto Email", channel: "email", status: "pending", lastMessage: "db1212davila@gmail.com", time: new Date().toLocaleTimeString(), unread: 0, avatar: "CE", channelId: "db1212davila@gmail.com" }
   ];
 
   const mockMessages = {
-    1: [{ id: 1, from: "contact", text: "Hola, necesito información sobre sus servicios", time: "10:30" }, { id: 2, from: "agent", text: "¡Hola Cristofer! Claro, ¿en qué puedo ayudarte?", time: "10:32" }],
-    2: [{ id: 1, from: "contact", text: "Buen día, quisiera una cotización", time: "09:15" }, { id: 2, from: "agent", text: "Hola Bryan, con gusto te ayudo con la cotización", time: "09:20" }]
+    1: [{ id: 1, from: "contact", text: "Hola, necesito información", time: "10:30" }, { id: 2, from: "agent", text: "¡Hola! ¿En qué puedo ayudarte?", time: "10:32" }],
+    2: [{ id: 1, from: "contact", text: "Buen día, quisiera una cotización", time: "09:15" }, { id: 2, from: "agent", text: "Hola, con gusto te ayudo", time: "09:20" }]
   };
 
   useEffect(() => {
@@ -97,8 +100,7 @@ function App() {
 
   const selectConversation = (conversation) => {
     setSelectedConversation(conversation);
-    const conversationMessages = mockMessages[conversation.id] || [];
-    setMessages(conversationMessages);
+    setMessages(mockMessages[conversation.id] || []);
   };
 
   const sendMessage = async () => {
@@ -107,62 +109,35 @@ function App() {
     if (selectedConversation.channel === 'email') {
       const token = localStorage.getItem('token');
       try {
-        const response = await fetch(`${API_URL}/api/email/send`, {
+        await fetch(`${API_URL}/api/email/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ to: selectedConversation.channelId, subject: 'Mensaje de OmniConnect CRM', message: newMessage })
         });
-        const data = await response.json();
-        if (data.success) alert('✅ Email enviado correctamente');
-        else alert('❌ Error al enviar email: ' + data.error);
+        alert('✅ Email enviado');
       } catch (error) {
-        alert('Error de conexión con el servidor');
+        alert('Error de conexión');
       }
     }
     
-    const newMsg = { id: Date.now(), from: "agent", text: newMessage, time: new Date().toLocaleTimeString() };
-    setMessages([...messages, newMsg]);
+    setMessages([...messages, { id: Date.now(), from: "agent", text: newMessage, time: new Date().toLocaleTimeString() }]);
     setNewMessage('');
   };
 
   const updateConversationStatus = (conversationId, status) => {
     setConversations(prev => prev.map(conv => conv.id === conversationId ? { ...conv, status } : conv));
-    const updatedConvs = conversations.map(conv => conv.id === conversationId ? { ...conv, status } : conv);
-    const open = updatedConvs.filter(c => c.status === "open").length;
-    const pending = updatedConvs.filter(c => c.status === "pending").length;
-    const resolved = updatedConvs.filter(c => c.status === "resolved").length;
-    setStats({ total: conversations.length, open, pending, resolved });
+    const updated = conversations.map(conv => conv.id === conversationId ? { ...conv, status } : conv);
+    setStats({ total: conversations.length, open: updated.filter(c => c.status === "open").length, pending: updated.filter(c => c.status === "pending").length, resolved: updated.filter(c => c.status === "resolved").length });
   };
 
-  const getChannelIcon = (channel) => {
-    const icons = { whatsapp: '💚', telegram: '💙', messenger: '💜', instagram: '💗', email: '📧' };
-    return icons[channel] || '💬';
-  };
+  const getChannelIcon = (c) => ({ whatsapp: '💚', telegram: '💙', messenger: '💜', email: '📧' }[c] || '💬');
+  const getChannelColor = (c) => ({ whatsapp: '#25D366', telegram: '#0088cc', messenger: '#0084ff', email: '#EA4335' }[c] || '#666');
+  const getStatusColor = (s) => ({ open: '#4caf50', pending: '#ff9800', resolved: '#2196f3' }[s] || '#9e9e9e');
+  const getStatusText = (s) => ({ open: '🟢 Abierta', pending: '🟡 Pendiente', resolved: '🔵 Resuelta' }[s] || s);
 
-  const getChannelColor = (channel) => {
-    const colors = { whatsapp: '#25D366', telegram: '#0088cc', messenger: '#0084ff', instagram: '#E4405F', email: '#EA4335' };
-    return colors[channel] || '#666';
-  };
+  const filteredConversations = conversations.filter(c => (filterChannel === 'all' || c.channel === filterChannel) && (filterStatus === 'all' || c.status === filterStatus));
 
-  const getStatusColor = (status) => {
-    const colors = { open: '#4caf50', pending: '#ff9800', resolved: '#2196f3' };
-    return colors[status] || '#9e9e9e';
-  };
-
-  const getStatusText = (status) => {
-    const texts = { open: '🟢 Abierta', pending: '🟡 Pendiente', resolved: '🔵 Resuelta' };
-    return texts[status] || status;
-  };
-
-  const filteredConversations = conversations.filter(conv => {
-    if (filterChannel !== 'all' && conv.channel !== filterChannel) return false;
-    if (filterStatus !== 'all' && conv.status !== filterStatus) return false;
-    return true;
-  });
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0d1117', color: 'white' }}>Cargando OmniConnect CRM...</div>;
-  }
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0d1117', color: 'white' }}>Cargando OmniConnect CRM...</div>;
 
   if (!isLoggedIn) {
     return (
@@ -174,44 +149,38 @@ function App() {
             <input type="password" name="password" placeholder="Contraseña" style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '6px', border: '1px solid #30363d', backgroundColor: '#0d1117', color: 'white' }} required />
             <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#238636', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Ingresar</button>
           </form>
-          <p style={{ textAlign: 'center', marginTop: '20px', color: '#8b949e', fontSize: '12px' }}>Demo: usa cualquier email y contraseña</p>
         </div>
       </div>
     );
   }
 
-  // VISTA PARA SUPER ADMIN
   if (user?.role === 'super_admin') {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#0d1117' }}>
         <Navbar user={user} workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
         <div style={{ padding: '20px' }}>
           {activeTab === 'global_dashboard' && <AdminDashboard user={user} token={localStorage.getItem('token')} />}
-          {activeTab === 'clients' && <div style={{ color: 'white' }}>📋 Gestión de Clientes (próximamente)</div>}
-          {activeTab === 'workspaces' && <div style={{ color: 'white' }}>🏭 Workspaces (próximamente)</div>}
-          {activeTab === 'users' && <div style={{ color: 'white' }}>👤 Usuarios (próximamente)</div>}
+          {activeTab === 'clients' && <div style={{ color: 'white' }}>📋 Gestión de Clientes</div>}
+          {activeTab === 'workspaces' && <div style={{ color: 'white' }}>🏭 Workspaces</div>}
+          {activeTab === 'users' && <div style={{ color: 'white' }}>👤 Usuarios</div>}
         </div>
       </div>
     );
   }
 
-  // VISTA PARA CLIENTE (ADMIN, AGENT, VIEWER)
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0d1117' }}>
       <Navbar user={user} workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       
-      {/* Panel de contenido según pestaña seleccionada */}
-      {activeTab === 'pipeline' && (
-        <PipelineKanban workspaceId={user?.workspace} token={localStorage.getItem('token')} />
-      )}
+      {activeTab === 'pipeline' && <PipelineKanban workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
+      {activeTab === 'scoring' && <LeadScoring workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
+      {activeTab === 'agents' && <AgentsPanel workspaceId={user?.workspace} token={localStorage.getItem('token')} userRole={user?.role} />}
+      {activeTab === 'reports' && <ReportsPanel workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
+      {activeTab === 'settings' && <SettingsPanel workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
+      {activeTab === 'billing' && <BillingPanel workspace={workspace} user={user} />}
       
-      {activeTab === 'scoring' && (
-        <LeadScoring workspaceId={user?.workspace} token={localStorage.getItem('token')} />
-      )}
-      
-      {(activeTab === 'conversations' || activeTab === 'contacts' || activeTab === 'agents' || activeTab === 'reports' || activeTab === 'settings' || activeTab === 'billing') && (
+      {activeTab === 'conversations' && (
         <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
-          {/* Sidebar izquierdo */}
           <div style={{ width: '320px', backgroundColor: '#161b22', borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #30363d' }}>
               <h3 style={{ margin: 0, color: 'white', fontSize: '16px' }}>{workspace?.name || 'Mi Empresa'}</h3>
@@ -261,7 +230,6 @@ function App() {
             </div>
           </div>
 
-          {/* Panel central - Chat */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {selectedConversation && (
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #30363d', backgroundColor: '#161b22' }}>
@@ -295,7 +263,6 @@ function App() {
             )}
           </div>
 
-          {/* Sidebar derecho */}
           <div style={{ width: '280px', backgroundColor: '#161b22', borderLeft: '1px solid #30363d', padding: '20px' }}>
             {selectedConversation ? (
               <>
