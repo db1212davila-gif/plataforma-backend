@@ -172,11 +172,11 @@ function App() {
     <div style={{ minHeight: '100vh', backgroundColor: '#0d1117' }}>
       <Navbar user={user} workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       
-      {activeTab === 'pipeline' && <PipelineKanban workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
-      {activeTab === 'scoring' && <LeadScoring workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
-      {activeTab === 'agents' && <AgentsPanel workspaceId={user?.workspace} token={localStorage.getItem('token')} userRole={user?.role} />}
-      {activeTab === 'reports' && <ReportsPanel workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
-      {activeTab === 'settings' && <SettingsPanel workspaceId={user?.workspace} token={localStorage.getItem('token')} />}
+      {activeTab === 'pipeline' && <PipelineKanban workspaceId={workspace?.id} token={localStorage.getItem('token')} />}
+      {activeTab === 'scoring' && <LeadScoring workspaceId={workspace?.id} token={localStorage.getItem('token')} />}
+      {activeTab === 'agents' && <AgentsPanel workspaceId={workspace?.id} token={localStorage.getItem('token')} userRole={user?.role} />}
+      {activeTab === 'reports' && <ReportsPanel workspaceId={workspace?.id} token={localStorage.getItem('token')} />}
+      {activeTab === 'settings' && <SettingsPanel workspaceId={workspace?.id} token={localStorage.getItem('token')} />}
       {activeTab === 'billing' && <BillingPanel workspace={workspace} user={user} />}
       
       {activeTab === 'conversations' && (
