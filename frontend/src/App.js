@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
@@ -8,7 +7,6 @@ function App() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [socket, setSocket] = useState(null);
   const [user, setUser] = useState(null);
   const [workspace, setWorkspace] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,25 +15,67 @@ function App() {
   const [stats, setStats] = useState({ total: 0, open: 0, pending: 0, resolved: 0 });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Datos de prueba (mientras no hay backend)
-  const mockContacts = [
-    { id: 1, name: "Juan Pérez", channel: "whatsapp", status: "open", lastMessage: "Hola, ¿cómo están?", time: "10:30", unread: 2, avatar: "JP", channelId: "+56912345678" },
-    { id: 2, name: "María González", channel: "telegram", status: "pending", lastMessage: "Necesito información", time: "09:15", unread: 0, avatar: "MG", channelId: "@maria_g" },
-    { id: 3, name: "Carlos López", channel: "messenger", status: "resolved", lastMessage: "Gracias por la ayuda", time: "ayer", unread: 0, avatar: "CL", channelId: "carlos.lopez" },
-    { id: 4, name: "Ana Martínez", channel: "whatsapp", status: "open", lastMessage: "¿Cuándo llega mi pedido?", time: "08:45", unread: 3, avatar: "AM", channelId: "+56987654321" },
-    { id: 5, name: "Pedro Sánchez", channel: "telegram", status: "pending", lastMessage: "Quiero contratar sus servicios", time: "ayer", unread: 1, avatar: "PS", channelId: "@pedro_s" },
+  // CONTACTOS REALES - OmniConnect CRM
+  const realContacts = [
+    { 
+      id: 1, 
+      name: "Cristofer Davila", 
+      channel: "whatsapp", 
+      status: "open", 
+      lastMessage: "Cliente - Esperando respuesta", 
+      time: new Date().toLocaleTimeString(), 
+      unread: 0, 
+      avatar: "CD", 
+      channelId: "0963176949",
+      phoneNumber: "0963176949"
+    },
+    { 
+      id: 2, 
+      name: "Bryan Davila", 
+      channel: "whatsapp", 
+      status: "open", 
+      lastMessage: "Administrador - Cliente potencial", 
+      time: new Date().toLocaleTimeString(), 
+      unread: 0, 
+      avatar: "BD", 
+      channelId: "0963117997",
+      phoneNumber: "0963117997"
+    },
+    { 
+      id: 3, 
+      name: "Recor Digital", 
+      channel: "telegram", 
+      status: "pending", 
+      lastMessage: "Canal de Telegram - Recor Digital", 
+      time: new Date().toLocaleTimeString(), 
+      unread: 0, 
+      avatar: "RD", 
+      channelId: "@RecorDigital",
+      username: "@RecorDigital"
+    },
+    { 
+      id: 4, 
+      name: "Contacto Email", 
+      channel: "email", 
+      status: "pending", 
+      lastMessage: "db1212davila@gmail.com", 
+      time: new Date().toLocaleTimeString(), 
+      unread: 0, 
+      avatar: "CE", 
+      channelId: "db1212davila@gmail.com"
+    }
   ];
 
+  // Mensajes de ejemplo
   const mockMessages = {
     1: [
-      { id: 1, from: "contact", text: "Hola, ¿cómo están?", time: "10:30" },
-      { id: 2, from: "agent", text: "¡Hola Juan! Bien, ¿en qué podemos ayudarte?", time: "10:32" },
-      { id: 3, from: "contact", text: "Quisiera saber el estado de mi pedido", time: "10:33" },
+      { id: 1, from: "contact", text: "Hola, necesito información sobre sus servicios", time: "10:30" },
+      { id: 2, from: "agent", text: "¡Hola Cristofer! Claro, ¿en qué puedo ayudarte?", time: "10:32" }
     ],
     2: [
-      { id: 1, from: "contact", text: "Necesito información sobre sus planes", time: "09:15" },
-      { id: 2, from: "agent", text: "Claro María, te comparto nuestros planes", time: "09:20" },
-    ],
+      { id: 1, from: "contact", text: "Buen día, quisiera una cotización", time: "09:15" },
+      { id: 2, from: "agent", text: "Hola Bryan, con gusto te ayudo con la cotización", time: "09:20" }
+    ]
   };
 
   // Verificar autenticación al cargar
@@ -49,48 +89,48 @@ function App() {
       setWorkspace(JSON.parse(storedWorkspace));
       setIsLoggedIn(true);
       
-      // Calcular stats con datos de prueba
-      const total = mockContacts.length;
-      const open = mockContacts.filter(c => c.status === "open").length;
-      const pending = mockContacts.filter(c => c.status === "pending").length;
-      const resolved = mockContacts.filter(c => c.status === "resolved").length;
+      // Calcular stats con contactos reales
+      const total = realContacts.length;
+      const open = realContacts.filter(c => c.status === "open").length;
+      const pending = realContacts.filter(c => c.status === "pending").length;
+      const resolved = realContacts.filter(c => c.status === "resolved").length;
       setStats({ total, open, pending, resolved });
-      setConversations(mockContacts);
+      setConversations(realContacts);
     }
     setLoading(false);
   }, []);
 
   const handleLogin = async (email, password) => {
-  try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await response.json();
-    
-    if (response.ok) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('workspace', JSON.stringify(data.workspace));
-      setUser(data.user);
-      setWorkspace(data.workspace);
-      setIsLoggedIn(true);
-    } else {
-      alert(data.error || 'Error al iniciar sesión');
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('workspace', JSON.stringify(data.workspace));
+        setUser(data.user);
+        setWorkspace(data.workspace);
+        setIsLoggedIn(true);
+      } else {
+        alert(data.error || 'Error al iniciar sesión');
+      }
+    } catch (error) {
+      alert('Error de conexión con el servidor');
     }
-  } catch (error) {
-    alert('Error de conexión con el servidor');
-  }
-};
+  };
 
-const handleLogout = () => {
-  localStorage.clear();
-  setUser(null);
-  setWorkspace(null);
-  setIsLoggedIn(false);
-  setSelectedConversation(null);
-};
+  const handleLogout = () => {
+    localStorage.clear();
+    setUser(null);
+    setWorkspace(null);
+    setIsLoggedIn(false);
+    setSelectedConversation(null);
+  };
 
   const selectConversation = (conversation) => {
     setSelectedConversation(conversation);
@@ -119,7 +159,6 @@ const handleLogout = () => {
       )
     );
     
-    // Actualizar stats
     const updatedConvs = conversations.map(conv => 
       conv.id === conversationId ? { ...conv, status } : conv
     );
@@ -169,7 +208,6 @@ const handleLogout = () => {
     return texts[status] || status;
   };
 
-  // Filtrar conversaciones
   const filteredConversations = conversations.filter(conv => {
     if (filterChannel !== 'all' && conv.channel !== filterChannel) return false;
     if (filterStatus !== 'all' && conv.status !== filterStatus) return false;
@@ -186,7 +224,7 @@ const handleLogout = () => {
         backgroundColor: '#0d1117',
         color: 'white'
       }}>
-        <div>Cargando plataforma...</div>
+        <div>Cargando OmniConnect CRM...</div>
       </div>
     );
   }
@@ -216,7 +254,7 @@ const handleLogout = () => {
             color: 'white',
             fontSize: '24px'
           }}>
-            🚀 Plataforma de Mensajería
+            🚀 OmniConnect CRM
           </h2>
           
           <form onSubmit={(e) => {
@@ -306,15 +344,14 @@ const handleLogout = () => {
         display: 'flex', 
         flexDirection: 'column'
       }}>
-        {/* Header del workspace */}
         <div style={{ 
           padding: '20px', 
           borderBottom: '1px solid #30363d',
           backgroundColor: '#161b22'
         }}>
-          <h2 style={{ margin: 0, fontSize: '18px', color: 'white' }}>{workspace?.name}</h2>
+          <h2 style={{ margin: 0, fontSize: '18px', color: 'white' }}>{workspace?.name || 'OmniConnect'}</h2>
           <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#8b949e' }}>
-            Plan: {user?.plan || 'Free'} • {user?.name}
+            Plan: {user?.plan || 'Free'} • {user?.name || 'Usuario'}
           </p>
           <button 
             onClick={handleLogout}
@@ -333,7 +370,6 @@ const handleLogout = () => {
           </button>
         </div>
 
-        {/* Stats cards */}
         <div style={{ padding: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div style={{ backgroundColor: '#21262d', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
             <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'white' }}>{stats.total}</div>
@@ -353,7 +389,6 @@ const handleLogout = () => {
           </div>
         </div>
 
-        {/* Filtros */}
         <div style={{ padding: '15px', borderTop: '1px solid #30363d', borderBottom: '1px solid #30363d' }}>
           <div style={{ marginBottom: '10px' }}>
             <select 
@@ -395,7 +430,6 @@ const handleLogout = () => {
           </div>
         </div>
 
-        {/* Lista de conversaciones */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {filteredConversations.map(conv => (
             <div 
@@ -458,7 +492,6 @@ const handleLogout = () => {
 
       {/* Panel central - Chat */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#0d1117' }}>
-        {/* Header del chat */}
         {selectedConversation && (
           <div style={{ 
             padding: '16px 20px', 
@@ -510,7 +543,6 @@ const handleLogout = () => {
           </div>
         )}
 
-        {/* Área de mensajes */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {selectedConversation ? (
             messages.map(msg => (
@@ -548,7 +580,6 @@ const handleLogout = () => {
           )}
         </div>
 
-        {/* Input de mensaje */}
         {selectedConversation && (
           <div style={{ 
             padding: '16px 20px', 
@@ -593,7 +624,7 @@ const handleLogout = () => {
         )}
       </div>
 
-      {/* Sidebar derecho - Info y acciones rápidas */}
+      {/* Sidebar derecho */}
       <div style={{ 
         width: '280px', 
         backgroundColor: '#161b22', 
