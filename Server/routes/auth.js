@@ -3,8 +3,49 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Workspace = require('../models/Workspace');
+const Contact = require('../models/Contact'); // ← NUEVO
 
-// Registro de nuevo usuario con workspace
+// ============================================================
+// Función para obtener contactos de ejemplo según el rubro
+// ============================================================
+const getSampleContacts = (workspaceName) => {
+  const name = workspaceName.toLowerCase();
+  
+  if (name.includes('pizzeria') || name.includes('pizza') || name.includes('sabor')) {
+    return [
+      { name: "Juan Pérez", channel: "whatsapp", channelId: "+593961234567", phoneNumber: "+593961234567" },
+      { name: "María González", channel: "telegram", channelId: "@maria_g", username: "@maria_g" },
+      { name: "Carlos López", channel: "whatsapp", channelId: "+593987654321", phoneNumber: "+593987654321" },
+      { name: "Ana Martínez", channel: "messenger", channelId: "ana.mtz", username: "ana.mtz" }
+    ];
+  }
+  
+  if (name.includes('ferreteria') || name.includes('martillo')) {
+    return [
+      { name: "Roberto Gómez", channel: "whatsapp", channelId: "+593971234567", phoneNumber: "+593971234567" },
+      { name: "Carmen Rojas", channel: "telegram", channelId: "@carmen_r", username: "@carmen_r" },
+      { name: "José Castillo", channel: "whatsapp", channelId: "+593982345678", phoneNumber: "+593982345678" }
+    ];
+  }
+  
+  if (name.includes('clinica') || name.includes('dental') || name.includes('sonrisa')) {
+    return [
+      { name: "Patricia Vega", channel: "whatsapp", channelId: "+593978901234", phoneNumber: "+593978901234" },
+      { name: "Andrés Solano", channel: "telegram", channelId: "@andres_s", username: "@andres_s" },
+      { name: "Marcela Jiménez", channel: "whatsapp", channelId: "+593989012345", phoneNumber: "+593989012345" }
+    ];
+  }
+  
+  // Contactos genéricos para cualquier otra empresa
+  return [
+    { name: "Cliente Ejemplo 1", channel: "whatsapp", channelId: "+593900000001", phoneNumber: "+593900000001" },
+    { name: "Cliente Ejemplo 2", channel: "telegram", channelId: "@cliente2", username: "@cliente2" }
+  ];
+};
+
+// ============================================================
+// Registro de nuevo usuario con workspace y contactos de ejemplo
+// ============================================================
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, workspaceName } = req.body;
@@ -19,7 +60,7 @@ router.post('/register', async (req, res) => {
       name, 
       email, 
       password: hashedPassword,
-      role: 'admin' // El primer usuario de la empresa es admin
+      role: 'admin'
     });
     await user.save();
     
@@ -33,6 +74,19 @@ router.post('/register', async (req, res) => {
     // Actualizar usuario con workspace asignado
     user.workspace = workspace._id;
     await user.save();
+    
+    // ============================================================
+    // NUEVO: Crear contactos de ejemplo para esta empresa
+    // ============================================================
+    const sampleContacts = getSampleContacts(workspaceName || workspace.name);
+    for (const contactData of sampleContacts) {
+      const contact = new Contact({
+        ...contactData,
+        workspace: workspace._id
+      });
+      await contact.save();
+    }
+    console.log(`✅ Contactos de ejemplo creados para workspace: ${workspace.name}`);
     
     const token = jwt.sign(
       { 
@@ -60,11 +114,14 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error en registro:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Login
+// ============================================================
+// Login (sin cambios)
+// ============================================================
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -82,7 +139,6 @@ router.post('/login', async (req, res) => {
     let workspace = null;
     let workspaceId = null;
     
-    // Super admin no tiene workspace
     if (user.role === 'super_admin') {
       workspaceId = null;
     } else {
